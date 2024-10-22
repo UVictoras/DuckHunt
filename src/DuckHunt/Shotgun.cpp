@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "Shotgun.h"
 
-#include <thread>
-#include <iostream>
-
 void Shotgun::Click()
 {
 	switch (m_state)

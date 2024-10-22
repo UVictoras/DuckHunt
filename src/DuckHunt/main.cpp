@@ -3,10 +3,10 @@
 
 int main()
 {
-	sf::RenderWindow window(sf::VideoMode(800, 600), "Duck Hunt");
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Duck Hunt");
 
-	window.clear();
-	window.display();
+    window.clear();
+    window.display();
 
     sf::Texture texture;
     if (!texture.loadFromFile("..\\..\\..\\res\\Image\\Crosshair.png"))
@@ -25,15 +25,15 @@ int main()
 
     crosshair.setScale(scaleX, scaleY);
 
-    crosshair.setOrigin(textureSize.x / 2.0f, textureSize.y / 2.0f); 
+    crosshair.setOrigin(textureSize.x / 2.0f, textureSize.y / 2.0f);
 
     sf::Texture backGroundTexture;
-    if (!backGroundTexture.loadFromFile("..\\..\\..\\res\\Image\\Background.jpg")) 
+    if (!backGroundTexture.loadFromFile("..\\..\\..\\res\\Image\\Background.jpg"))
         return -1;
 
     sf::Sprite background;
     background.setTexture(backGroundTexture);
-       
+
     sf::Vector2i mousePosition;
 
     sf::Vector2f worldPosition;
@@ -41,29 +41,29 @@ int main()
     Shotgun shotgun;
     shotgun.LoadTextures();
 
-    sf::Texture birdTexture; 
-    if (!birdTexture.loadFromFile("..\\..\\..\\res\\Image\\Bird.png")) 
-        return -1;
+    std::vector<Bird*> birds;
 
-    std::vector<Bird> birds; 
+    sf::Clock spawnClock;
+    sf::Time spawnInterval = sf::seconds(2.0f);
 
-    sf::Clock spawnClock; 
-    sf::Time spawnInterval = sf::seconds(2.0f); 
-
-    sf::Clock deltaTimeClock; 
+    sf::Clock deltaTimeClock;
+    sf::Clock birdStateClock; 
+    sf::Time birdStateUpdateInterval = sf::seconds(0.1f); 
 
     std::srand(static_cast<unsigned>(std::time(0)));
 
-    int score = 0; 
+    int score = 0;
 
-    sf::Font font; 
-    if (!font.loadFromFile("..\\..\\..\\res\\m29.ttf"))  
+    sf::Font font;
+    if (!font.loadFromFile("..\\..\\..\\res\\m29.ttf"))
         return -1;
 
-    sf::Text scoreText; 
-    scoreText.setFont(font); 
-    scoreText.setCharacterSize(24);  
-    scoreText.setFillColor(sf::Color::White);  
+    sf::Text scoreText;
+    scoreText.setFont(font);
+    scoreText.setCharacterSize(24);
+    scoreText.setFillColor(sf::Color::White);
+
+    window.setMouseCursorVisible(false);
 
     while (window.isOpen())
     {
@@ -74,56 +74,76 @@ int main()
                 window.close();
         }
 
-        float deltaTime = deltaTimeClock.restart().asSeconds(); 
+        float deltaTime = deltaTimeClock.restart().asSeconds();
 
-        if (spawnClock.getElapsedTime() >= spawnInterval) 
+        if (spawnClock.getElapsedTime() >= spawnInterval)
         {
-            spawnClock.restart(); 
+            spawnClock.restart();
 
-            bool spawnOnRight = std::rand() % 2; 
+            std::srand(static_cast<unsigned>(std::time(0)));
 
-            float yPos = static_cast<float>(std::rand() % 600); 
+            bool spawnOnRight = std::rand() % 2;
 
-            float speed = 100.0f; 
-             
-            if (spawnOnRight) 
+            std::srand(static_cast<unsigned>(std::time(0)));
+
+            int random = std::rand() % 3;
+
+            std::srand(static_cast<unsigned>(std::time(0)));
+
+            float yPos = static_cast<float>(std::rand() % 600);
+
+            float speed = 100.0f;
+
+            Bird* bird;
+            if (spawnOnRight)
             {
-                birds.emplace_back(birdTexture, 800.0f, yPos, speed, false); 
+                bird = new Bird(800.0f, yPos, speed, true);
+                bird->LoadTextures(random);
             }
             else
             {
-                birds.emplace_back(birdTexture, 0.0f, yPos, speed, true);  
+                bird = new Bird(0.0f, yPos, speed, false);
+                bird->LoadTextures(random);
             }
+
+            birds.emplace_back(bird);
         }
 
-        for (auto& bird : birds) 
+        if (birdStateClock.getElapsedTime() >= birdStateUpdateInterval)
         {
-            bird.update(deltaTime); 
-        }
+            birdStateClock.restart();  
 
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) 
-        {
-            sf::Vector2i mousePosition = sf::Mouse::getPosition(window); 
-            sf::Vector2f mousePosFloat = window.mapPixelToCoords(mousePosition); 
-
-            for (auto it = birds.begin(); it != birds.end();) 
+            for (Bird* bird : birds)
             {
-                if (it->isClicked(mousePosFloat) && shotgun.GetStateStr() == "Barrel is Full.")
-                {             
-                    score += 100;  
-                    it = birds.erase(it);
-                }
-                else
+                bird->RotateStates();
+                bird->ChangeTextureToState();
+            }
+        }
+
+        for (Bird* bird : birds)
+        {
+            bird->update(deltaTime);
+        }
+
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+        {
+            sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+            sf::Vector2f mousePosFloat = window.mapPixelToCoords(mousePosition);
+
+            for (int i = 0; i < birds.size(); i++)
+            {
+                if (birds[i]->isClicked(mousePosFloat) && shotgun.GetStateStr() == "Barrel is Full.")
                 {
-                    ++it;  
+                    score += 100;
+                    birds[i]->GotShot();
                 }
             }
-            shotgun.Click(); 
-        } 
+            shotgun.Click();
+        }
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::R)) 
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
         {
-            shotgun.Reload(); 
+            shotgun.Reload();
         }
 
         mousePosition = sf::Mouse::getPosition(window);
@@ -132,28 +152,28 @@ int main()
 
         crosshair.setPosition(worldPosition);
 
-        scoreText.setString("Score : " + std::to_string(score)); 
+        scoreText.setString("Score : " + std::to_string(score));
 
         window.clear();
 
         window.draw(background);
-        window.draw(shotgun.m_sprite); 
-        for (Bird bird : birds) 
+        for (Bird* bird : birds)
         {
-            window.draw(bird.getSprite()); 
+            window.draw(bird->getSprite());
         }
+        window.draw(shotgun.m_sprite);
 
         window.draw(crosshair);
 
         scoreText.setPosition(window.getSize().x - scoreText.getGlobalBounds().width - 10, 10);
-        window.draw(scoreText); 
+        window.draw(scoreText);
 
         window.display();
-	}
+    }
 
 #ifdef _DEBUG
-	_CrtDumpMemoryLeaks();
+    _CrtDumpMemoryLeaks();
 #endif
 
-	return 0;
+    return 0;
 }

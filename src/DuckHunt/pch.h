@@ -11,6 +11,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
+#include <thread>
 #include <iostream>
 #include "Shotgun.h"
 #include "Bird.h"

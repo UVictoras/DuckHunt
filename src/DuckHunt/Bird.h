@@ -3,39 +3,45 @@
 
 class Bird
 {
+    enum class BirdState
+    {
+        State1,
+        State2,
+        State3,
+        Shot,
+        Falling 
+    };
+
 private:
+    BirdState m_state;
     sf::Sprite sprite;
-    sf::Texture texture;
-    float speed;
-    bool movingRight;
+    std::vector<sf::Texture*> m_textures;
+    float speed; 
+    bool movingRight; 
+    bool isFalling;
+    sf::Vector2f m_currentPosition;
 
 public:
-    Bird(const sf::Texture& texture, float startX, float startY, float speed, bool movingRight)
-        : sprite(texture), speed(speed), movingRight(movingRight)
+    Bird(float startX, float startY, float speed, bool movingRight)
+        : speed(speed), movingRight(movingRight), m_state(BirdState::State1), isFalling(false)
     {
-        sprite.setPosition(startX, startY);
-
-        sf::Vector2u textureSize = texture.getSize();
-
-        float scaleX = 53.0f / textureSize.x; 
-        float scaleY = 40.0f / textureSize.y; 
-         
-        sprite.setScale(scaleX, scaleY); 
-
-        sprite.setOrigin(textureSize.x / 2.0f, textureSize.y / 2.0f); 
-
-        if (!movingRight) 
-        {
-            sprite.setScale(-scaleX, scaleY); 
-        }
+        sprite.setPosition({ startX, startY });
     }
 
     void update(float deltaTime);
 
-    bool isClicked(sf::Vector2f mousePos)
-    {
-        return sprite.getGlobalBounds().contains(mousePos);
-    }
+    bool isClicked(sf::Vector2f mousePos);
+
+    void LoadTextures(int seed);
+
+    void GotShot();
+
+    void ChangeTextureToState();
+
+    void RotateStates();
 
     sf::Sprite& getSprite() { return sprite; }
+
+private:
+    void _Fall();
 };
